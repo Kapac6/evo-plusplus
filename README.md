@@ -16,9 +16,9 @@ EvoPlusPlus - форк мода [EvoPlus](https://github.com/evo-plus/evo-plus),
 ---
 
 # Feedback
-* [Дискорд](https://discord.gg/tkuVE3fdKt): информация об обновлениях и обратная связь.
-* [Телеграм](https://asyncdargen.t.me/) (asyncdargen): разработчик.
-* [Телеграм](https://chmol17.t.me/) (Smole17): разработчик.
+* [Дискорд](https://discord.gg/tkuVE3fdKt): информация об обновлениях оригинального мода и обратная связь.
+* [Телеграм](https://asyncdargen.t.me/) (asyncdargen): разработчик оригинального мода.
+* [Телеграм](https://chmol17.t.me/) (Smole17): разработчик оригинального мода.
 
 ---
 
