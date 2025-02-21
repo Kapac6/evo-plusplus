@@ -2,7 +2,7 @@
 
 ---
 
-EvoPlusPlus - форк мода [EvoPlus](https://github.com/evo-plus/evo-plus), сделанная под Fabric 1.19.4 для режима PrisonEvo проекта DiamondWorld.
+EvoPlusPlus - форк мода [EvoPlus](https://github.com/evo-plus/evo-plus), сделанный под Fabric 1.19.4 для режима PrisonEvo проекта DiamondWorld.
 
 ---
 
