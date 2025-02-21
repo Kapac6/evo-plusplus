@@ -18,7 +18,7 @@ import ru.dargen.evoplus.render.context.Overlay
 import ru.dargen.evoplus.render.context.WorldContext
 import ru.dargen.evoplus.scheduler.Scheduler
 import ru.dargen.evoplus.service.EvoPlusService
-import ru.dargen.evoplus.update.UpdateResolver
+
 
 val Logger = LoggerFactory.getLogger("EvoPlus")
 
@@ -48,7 +48,6 @@ object EvoPlus : ClientModInitializer {
         Features
         EvoPlusService
 
-        UpdateResolver.schedule()
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<FabricClientCommandSource>, _ ->
             EvoPlusCommand.register(dispatcher)

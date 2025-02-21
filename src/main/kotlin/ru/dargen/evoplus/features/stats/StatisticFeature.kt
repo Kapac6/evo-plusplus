@@ -115,6 +115,7 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
             settings.baseElement("Сбросить счетчик блоков в час") {
                 button("Сбросить") {
                     on {
+                        pause = 0
                         TotalBlocks = 0
                         Uptime = 0
                         startTime = -1
