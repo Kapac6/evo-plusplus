@@ -20,6 +20,7 @@ import ru.dargen.evoplus.protocol.collector.PlayerDataCollector.combo
 import ru.dargen.evoplus.protocol.collector.PlayerDataCollector.economic
 import ru.dargen.evoplus.render.Relative
 import ru.dargen.evoplus.render.node.box.hbox
+import ru.dargen.evoplus.render.node.box.vbox
 import ru.dargen.evoplus.render.node.input.button
 import ru.dargen.evoplus.render.node.item
 import ru.dargen.evoplus.render.node.postRender
@@ -31,10 +32,12 @@ import ru.dargen.evoplus.util.minecraft.itemStack
 import ru.dargen.evoplus.util.minecraft.uncolored
 import java.util.*
 import java.util.concurrent.TimeUnit
+import kotlin.collections.ArrayList
 import kotlin.math.floor
 import kotlin.math.max
 import kotlin.time.TimeSource
 import kotlin.time.measureTime
+import ru.dargen.evoplus.util.format.asShortTextTime
 
 object StatisticFeature : Feature("statistic", "Статистика", Items.PAPER) {
 
@@ -56,6 +59,41 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
         "Уведомлять при выполнении требований",
         true
     )
+
+
+    private val MoneyBoostExpression =
+            "Вы получили локальный бустер денег x(\\d+\\.\\d+) на (\\d+) минут!".toRegex()
+
+    private val ShardBoostExpression =
+            "Вы получили локальный бустер шардов x(\\d+\\.\\d+) на (\\d+) минут!".toRegex()
+
+    val BoostTimersText = text("") {isShadowed = true}
+    val ShardBoostTimersText = text("") {isShadowed = true}
+
+    val BoostTimersWidget by widgets.widget("Таймер бустов", "boost-timers", false) {
+        origin = Relative.Center
+        align = Relative.Center
+        +vbox {
+            space = .0
+            indent = v3()
+
+            +BoostTimersText
+            +text(" ")
+            +ShardBoostTimersText
+        }
+    }
+
+    data class Boost(
+            var booster: Float,
+            var time: Int
+    )
+
+    val BoostArray: MutableList<Boost> = ArrayList()
+    val BoostTextList: MutableList<String> = ArrayList()
+
+    val ShardBoostArray: MutableList<Boost> = ArrayList()
+    val ShardBoostTextList: MutableList<String> = ArrayList()
+
 
 
 
@@ -96,9 +134,9 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
     val BPHText = text("0") {isShadowed = true}
     val UptimeText = text("0") {isShadowed = true}
     val BlocksPerHourText = text("7") { isShadowed = true }
-    val BlocksPerHourWidget by widgets.widget("Счетчик блоков в час", "block-counter-per-hour") {
-        align = Relative.RightBottom
-        origin = Relative.RightTop
+    val BlocksPerHourWidget by widgets.widget("Счетчик блоков в час", "block-counter-per-hour", false) {
+        origin = Relative.LeftCenter
+        align = v3(.87, .54)
         +hbox {
             space = .0
             indent = v3()
@@ -147,6 +185,8 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
             +item(itemStack(Items.WOODEN_PICKAXE)) {
                 scale = v3(.7, .7, .7)
             }
+
+
         }
     }
 
@@ -157,6 +197,38 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
             PetInfoWidget.update()
             ComboWidget.update(combo)
 
+            BoostTextList.clear()
+            ShardBoostTextList.clear()
+            BoostTextList.add("§e$")
+            ShardBoostTextList.add("\uE365")
+            BoostArray.sortBy { it.time }
+            for(Boost in BoostArray) {
+                Boost.time--
+                if(Boost.time <= 0) BoostArray.remove(Boost)
+                BoostTextList.add("§6x${Boost.booster}§7-§e${(Boost.time * 1000).toLong().asShortTextTime}")
+            }
+
+            ShardBoostArray.sortBy { it.time }
+            for(Boost in ShardBoostArray) {
+                Boost.time--
+                if(Boost.time <= 0) ShardBoostArray.remove(Boost)
+                ShardBoostTextList.add("§6x${Boost.booster}§7-§e${(Boost.time * 1000).toLong().asShortTextTime}")
+            }
+
+            if(BoostArray.size<1) {
+                BoostTextList.add("§6Бустов нет")
+            }
+
+            if(ShardBoostArray.size<1) {
+                ShardBoostTextList.add("§6Бустов нет")
+            }
+
+
+
+            BoostTimersText.lines = BoostTextList
+
+            ShardBoostTimersText.lines = ShardBoostTextList
+
             if(((currentMillis - lastMined)/1000 > 10) && startTime != -1L) {pause = 1}
             if(pause == 1) { startTime += 1000 }
 
@@ -165,11 +237,13 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
             if(startTime == -1L) {
                 BPHText.text = "-"
                 Uptime = 0
-            } else {
+            } else
+            {
 
                 var hour = Uptime / 3600
                 var min = Uptime / 60 % 60
                 var sec = Uptime / 1 % 60
+                BoostTimersText.lines
 
                 if(pause == 0) {
 
@@ -219,6 +293,25 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
                 val remain = it.groupValues[1].toIntOrNull() ?: return@on
                 combo.remain = remain.toLong()
                 ComboWidget.update(combo)
+
+            }
+
+            MoneyBoostExpression.find(text.uncolored())?.let {
+                val boost = it.groupValues[1].toFloat()
+                val time = (it.groupValues[2].toInt())*60
+
+                if(text.uncolored().startsWith("Вы получили")) {
+                    BoostArray.add(Boost(boost, time))
+                }
+            }
+
+            ShardBoostExpression.find(text.uncolored())?.let {
+                val boost = it.groupValues[1].toFloat()
+                val time = (it.groupValues[2].toInt())*60
+
+                if(text.uncolored().startsWith("Вы получили")) {
+                    ShardBoostArray.add(Boost(boost, time))
+                }
             }
         }
 

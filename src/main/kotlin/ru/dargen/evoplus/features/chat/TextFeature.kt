@@ -7,9 +7,14 @@ import ru.dargen.evoplus.event.chat.ChatReceiveEvent
 import ru.dargen.evoplus.event.chat.ChatSendEvent
 import ru.dargen.evoplus.event.on
 import ru.dargen.evoplus.feature.Feature
-import ru.dargen.evoplus.features.chat.market.MarketChatTimerWidget
+//import ru.dargen.evoplus.features.chat.market.MarketChatTimerWidget
 import ru.dargen.evoplus.protocol.Connector
+import ru.dargen.evoplus.render.node.box.hbox
+import ru.dargen.evoplus.render.node.text
+import ru.dargen.evoplus.render.node.tick
 import ru.dargen.evoplus.util.currentMillis
+import ru.dargen.evoplus.util.format.asShortTextTime
+import ru.dargen.evoplus.util.math.v3
 import ru.dargen.evoplus.util.minecraft.uncolored
 import ru.dargen.evoplus.util.selector.toSelector
 import java.text.SimpleDateFormat
@@ -18,12 +23,32 @@ import kotlin.math.ceil
 
 object TextFeature : Feature("text", "Текст", Items.WRITABLE_BOOK) {
 
-    val MarketChatTimer by widgets.widget(
-        "Таймер торгового чата",
-        "market-chat-timer",
-        widget = MarketChatTimerWidget,
-        enabled = false
-    )
+//    val MarketChatTimer by widgets.widget(
+//        "Таймер торгового чата",
+//        "market-chat-timer",
+//        widget = MarketChatTimerWidget,
+//        enabled = false
+//    )
+
+    var RemainingTime = 0L
+
+    val MarketChatTimerWidget by widgets.widget("Таймер торгового чата", "market-chat-timer", false) {
+        +hbox {
+            space = .0
+            indent = v3()
+
+            +text {
+                tick {
+                    text = "§6Ⓜ§f" + if (RemainingTime < currentMillis) {
+                        "§a✔"
+                    } else {
+                        "§c${(RemainingTime - currentMillis).asShortTextTime}"
+                    }
+                }
+            }
+        }
+    }
+
     val MarketChatTimerDelay by settings.selector("Задержка торгового чата", (3..5).toSelector()) { "$it мин." }
     val NoSpam by settings.boolean("Отключение спам-сообщений")
     val CopyMessages by settings.boolean("Копировать сообщение из чата (ПКМ)", true)
@@ -78,14 +103,25 @@ object TextFeature : Feature("text", "Текст", Items.WRITABLE_BOOK) {
             val colors = buildColorSetting(ColorInputs.mirroring)
             text = if (marketKeys.any { message.startsWith(it) } || marketWords.any { message.contains(it, true) })
                 text else message.replace(prefix, "").buildMessage(prefix, colors)
+
+
+
+
         }
 
         on<ChatSendEvent> {
-            if (!Connector.isOnPrisonEvo || marketKeys.any { !text.startsWith(it) } || MarketChatTimerWidget.RemainingTime >= currentMillis) return@on
+
+            //if (!Connector.isOnPrisonEvo || marketKeys.any { !text.startsWith(it) } || RemainingTime >= currentMillis) return@on
+            if (!Connector.isOnPrisonEvo || (!text.startsWith("$") && !text.startsWith(";")) || RemainingTime >= currentMillis) return@on
 
             val timerMultiplier = if (text.length - 1 >= 256) 2 else 1
-            MarketChatTimerWidget.RemainingTime = currentMillis + MarketChatTimerDelay * 60 * 1000 * timerMultiplier
+            //MarketChatTimerWidget.RemainingTime = currentMillis + MarketChatTimerDelay * 60 * 1000 * timerMultiplier
+
+            RemainingTime = currentMillis + (MarketChatTimerDelay * 60 * 1000 * timerMultiplier)
+
         }
+
+
 
 //        on<StringRenderEvent> {
 //            if (!ReplaceUniqueUsers) return@on
