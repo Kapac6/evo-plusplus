@@ -2,16 +2,16 @@
   "schemaVersion": 1,
   "id": "evo-plus",
   "version": "${version}",
-  "name": "EvoPlus",
-  "description": "Вспомогательный мод, созданный для улучшения качества игры на PrisonEvo сервера DiamondWorld",
-  "authors": ["dargen", "smole17"],
+  "name": "Evo++",
+  "description": "Client-side mod for Prison Evo DiamondWorld",
+  "authors": ["Kapac6_", "dargen", "smole17"],
   "contributors": ["2Terra_Miner", "GoDL1ghT"],
   "contact": {
-    "website": "https://modrinth.com/mod/evoplus",
+    "website": "https://github.com/Kapac6/evo-plusplus",
     "homepage": "https://discord.gg/tkuVE3fdKt",
-    "repo": "https://github.com/evo-plus/evo-plus",
-    "issues": "https://github.com/evo-plus/evo-plus",
-    "sources": "https://github.com/evo-plus/evo-plus"
+    "repo": "https://github.com/Kapac6/evo-plusplus",
+    "issues": "https://github.com/Kapac6/evo-plusplus",
+    "sources": "https://github.com/Kapac6/evo-plusplus"
   },
   "license": "MIT",
   "icon": "pack.png",

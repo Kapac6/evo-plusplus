@@ -19,7 +19,10 @@ import ru.dargen.evoplus.render.node.plus
 import ru.dargen.evoplus.render.node.world.cubeOutline
 import ru.dargen.evoplus.scheduler.async
 import ru.dargen.evoplus.util.evo.*
+import ru.dargen.evoplus.util.format.color
 import ru.dargen.evoplus.util.math.v3
+import ru.dargen.evoplus.util.minecraft.printMessage
+import ru.dargen.evoplus.util.minecraft.sendChatMessage
 import java.awt.Color
 
 object ESPFeature : Feature("esp", "Подсветка", Items.SEA_LANTERN) {
@@ -37,6 +40,16 @@ object ESPFeature : Feature("esp", "Подсветка", Items.SEA_LANTERN) {
     val BarrelsEsp by settings.boolean("Подсвечивание бочек") on { state ->
         Barrels.values.forEach { it.enabled = state }
     }
+    val BarrelsCustomColor by settings.boolean("Кастомный цвет бочек")
+    val BarrelColor = settings.colorPickerInput("Кастомный цвет бочки", id = "barrel-color")
+    //val ColorB = Color.decode(BarrelColor.inputs[0].content)
+            //.getColor(BarrelColor.inputs[0].content)
+
+
+
+
+
+
 
     init {
         on<ChunkLoadEvent> {
@@ -87,6 +100,16 @@ object ESPFeature : Feature("esp", "Подсветка", Items.SEA_LANTERN) {
         val luckyBlock = blockState.getLuckyBlock(blockPos, chunk)
         val barrel = blockState.getBarrel()
 
+        //sendChatMessage("${ColorB} | ${BarrelColor.inputs[0].content}")
+        var ColorB : Color?
+
+        if(BarrelsCustomColor) {
+            ColorB = BarrelColor.inputs[0].content.toIntOrNull(16)?.let { Color(it) }
+        } else {
+            ColorB = null
+        }
+        //printMessage("${ColorB} | ${BarrelColor.inputs[0].content}")
+
         when {
             shard != null -> when {
                 blockState.isHead() -> Shards[blockPos.mutableCopy()] =
@@ -104,8 +127,11 @@ object ESPFeature : Feature("esp", "Подсветка", Items.SEA_LANTERN) {
                     blockPos.mutableCopy().renderWallLittleCube(luckyBlock.color).apply { enabled = LuckyBlocksEsp }
             }
 
-            barrel != null -> Barrels[blockPos.mutableCopy()] =
-                blockPos.mutableCopy().renderCube(barrel.color).apply { enabled = BarrelsEsp }
+                barrel != null -> Barrels[blockPos.mutableCopy()] =
+                blockPos.mutableCopy().renderCube(ColorB ?: barrel.color).apply { enabled = BarrelsEsp }
+
+
+
         }
     }
 

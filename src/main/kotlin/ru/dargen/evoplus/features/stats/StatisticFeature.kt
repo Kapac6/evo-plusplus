@@ -199,7 +199,7 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
 
             BoostTextList.clear()
             ShardBoostTextList.clear()
-            BoostTextList.add("§e$")
+            BoostTextList.add("\uE135")
             ShardBoostTextList.add("\uE365")
             BoostArray.sortBy { it.time }
             for(Boost in BoostArray) {
