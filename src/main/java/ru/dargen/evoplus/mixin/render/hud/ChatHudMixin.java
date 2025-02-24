@@ -31,7 +31,7 @@ public abstract class ChatHudMixin {
     public void onAddMessage(Text message, MessageSignatureData signature, MessageIndicator indicator, CallbackInfo ci) {
         if (skipOnAddMessage) return;
 
-        val event = EventBus.INSTANCE.fire(new ChatReceiveEvent(message));
+        var event = EventBus.INSTANCE.fire(new ChatReceiveEvent(message));
 
         if (event.isCancelled()) {
             ci.cancel();

@@ -6,6 +6,7 @@ import net.fabricmc.loader.impl.util.log.Log
 import net.fabricmc.loader.impl.util.log.LogCategory
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
+import ru.dargen.evoplus.event.chat.ActionBarEvent
 import ru.dargen.evoplus.event.chat.ChatReceiveEvent
 import ru.dargen.evoplus.event.evo.data.ComboUpdateEvent
 import ru.dargen.evoplus.event.evo.data.LevelUpdateEvent
@@ -27,6 +28,8 @@ import ru.dargen.evoplus.render.node.postRender
 import ru.dargen.evoplus.render.node.text
 import ru.dargen.evoplus.scheduler.scheduleEvery
 import ru.dargen.evoplus.util.currentMillis
+import ru.dargen.evoplus.util.evo.convertFrom
+import ru.dargen.evoplus.util.evo.convertTo
 import ru.dargen.evoplus.util.math.v3
 import ru.dargen.evoplus.util.minecraft.itemStack
 import ru.dargen.evoplus.util.minecraft.uncolored
@@ -38,6 +41,7 @@ import kotlin.math.max
 import kotlin.time.TimeSource
 import kotlin.time.measureTime
 import ru.dargen.evoplus.util.format.asShortTextTime
+import ru.dargen.evoplus.util.minecraft.printMessage
 
 object StatisticFeature : Feature("statistic", "Статистика", Items.PAPER) {
 
@@ -61,11 +65,16 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
     )
 
 
+
     private val MoneyBoostExpression =
             "Вы получили локальный бустер денег x(\\d+\\.\\d+) на (\\d+) минут!".toRegex()
 
     private val ShardBoostExpression =
             "Вы получили локальный бустер шардов x(\\d+\\.\\d+) на (\\d+) минут!".toRegex()
+
+    private val ActionBarMoneyExpression = //"(\\d+.+\\w)".toRegex()
+            "(\\d+.\\d+\\w)".toRegex()
+    //"\\+(\\d+.\\d+\\w)\\$ (x(\\d+.\\d+))".toRegex()
 
     val BoostTimersText = text("") {isShadowed = true}
     val ShardBoostTimersText = text("") {isShadowed = true}
@@ -125,7 +134,16 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
                         BlocksCount = economic.blocks } } }
 
 
+
+    val MoneyPerHourChat by settings.boolean(
+            "Учитывать деньги с рун, питомцев, бомбочек",
+            true
+    )
+
+
     var TotalBlocks = 0
+    var TotalMoney : Long = 0
+    var CurrentMoney : Long = 0
     var Uptime = 0
     var startTime = -1L
     var lastMined = -1L
@@ -134,6 +152,7 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
     val BPHText = text("0") {isShadowed = true}
     val UptimeText = text("0") {isShadowed = true}
     val BlocksPerHourText = text("7") { isShadowed = true }
+    val MoneyPerHourText = text("0") {isShadowed = true}
     val BlocksPerHourWidget by widgets.widget("Счетчик блоков в час", "block-counter-per-hour", false) {
         origin = Relative.LeftCenter
         align = v3(.87, .54)
@@ -158,6 +177,8 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
                         Uptime = 0
                         startTime = -1
                         lastMined = -1
+                        TotalMoney = 0
+                        CurrentMoney = 0
                     }
                 }
             }
@@ -248,6 +269,7 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
                 if(pause == 0) {
 
                     BlocksPerHourText.text = "${(floor((TotalBlocks.toDouble() / ((currentMillis.toDouble() - startTime.toDouble()) / (1000 * 60 * 60))))).toInt()}"
+                    MoneyPerHourText.text = "${(floor((TotalMoney.toDouble() / ((currentMillis.toDouble() - startTime.toDouble()) / (1000 * 60 * 60))))).toLong()}"
 
                     if (hour > 0 && min > 0) {
                         UptimeText.text = "${hour}ч ${min}м ${sec}с"
@@ -259,16 +281,16 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
 
                     BPHText.lines = listOf(
                             "§aВремя: §f${UptimeText.text}",
-                            "§aБлоки/час: §f${BlocksPerHourText.text}",
-                            "§aНакопано: §f${TotalBlocks}"
+                            "§aБлоки/деньги в час: §f${BlocksPerHourText.text} §7/ §f${convertTo(MoneyPerHourText.text.toLong())}",
+                            "§aНакопано: §f${TotalBlocks} §7/ §f${convertTo(TotalMoney)}"
                     )
 
                     Uptime = ((currentMillis - startTime) / 1000).toInt()
                 } else if(pause == 1) {
                     BPHText.lines = listOf(
                             "§2Время: §7${UptimeText.text}",
-                            "§2Блоки/час: §7${BlocksPerHourText.text}",
-                            "§2Накопано: §7${TotalBlocks}"
+                            "§2Блоки/деньги в час: §7${BlocksPerHourText.text} §8/ §7${convertTo(MoneyPerHourText.text.toLong())}",
+                            "§2Накопано: §7${TotalBlocks} §8/ §7${convertTo(TotalMoney)}"
                     )
                 }
             }
@@ -278,6 +300,7 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
         on<BlockBreakEvent> {
             BlocksPerSecondCounter.add(currentMillis)
             TotalBlocks++
+            TotalMoney += CurrentMoney
 
 
 
@@ -313,6 +336,32 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
                     ShardBoostArray.add(Boost(boost, time))
                 }
             }
+
+            ActionBarMoneyExpression.find(text.uncolored())?.let {
+                if(MoneyPerHourChat) {
+                    //lastMined = currentMillis
+                    if (text.uncolored().startsWith("Фиолетовая бочка!")) {
+                        val money = it.groupValues[1]
+                        TotalMoney += convertFrom(money)
+                    }
+                    if (text.uncolored().startsWith("Красная бочка!")) {
+                        val money = it.groupValues[1]
+                        TotalMoney += convertFrom(money)
+                    }
+                    if (text.uncolored().startsWith("Руна \"Добытчик\" активировалась и принесла вам")) {
+                        val money = it.groupValues[1]
+                        TotalMoney += convertFrom(money)
+                    }
+                    if (text.uncolored().startsWith("Вы взорвали")) {
+                        val money = it.groupValues[1]
+                        TotalMoney += convertFrom(money)
+                    }
+                    if (text.uncolored().startsWith("Вы сломали")) {
+                        val money = it.groupValues[1]
+                        TotalMoney += convertFrom(money)
+                    }
+                }
+            }
         }
 
         on<ComboUpdateEvent> {
@@ -329,6 +378,24 @@ object StatisticFeature : Feature("statistic", "Статистика", Items.PAP
             if (BlocksCount == 0) BlocksCount = economic.blocks
             BlocksCounterText.text = "${max(economic.blocks - BlocksCount, 0)}"
         }
+
+
+        on<ActionBarEvent> {
+            //printMessage("акшнбар сюдаа ${actionbar.content.toString()} | ${TotalMoney}")
+            ActionBarMoneyExpression.find(text.uncolored())?.let {
+                val money = it.groupValues[1]
+                //printMessage("${money}")
+
+                if(text.uncolored().startsWith("+")) {
+                    CurrentMoney = convertFrom(money)
+                    //printMessage("${convertFrom(money)}")
+                }
+            }
+        }
+
+
     }
+
+
 
 }

@@ -38,6 +38,7 @@
     "render.map.MapRendererAccessor",
 
     "text.MutableTextMixin",
+    "text.ActionBarMixin",
 
     "entity.EntityAccessor",
     "entity.ArmorStandEntityMixin",

@@ -93,9 +93,11 @@ object BossTimerFeature : Feature("boss-timer", "Таймер боссов", ite
         listen<BossTimers> {
             if (PremiumTimers) it.timers
                 .mapKeys { BossType.valueOf(it.key) ?: return@listen }
-                .mapValues { (it.value + currentMillis * if (PlayerDataCollector.event === MYTHICAL_EVENT && it.key.isRaid) MYTHICAL_EVENT_MULTIPLIER_X1000 else 1000) / 1000 }
+                .mapValues { (it.value + currentMillis) }
+                //.mapValues { (it.value + currentMillis * if (PlayerDataCollector.event === MYTHICAL_EVENT && it.key.isRaid) MYTHICAL_EVENT_MULTIPLIER_X1000 else 1000) / 1000 }
                 .mapKeys { it.key.id }
                 .let(Bosses::putAll)
+            //printMessage("${it.timers.values} | ${it.timers.keys} | ${Bosses}")
         }
 
         scheduleEvery(period = 10) {
