@@ -1,31 +1,36 @@
 package ru.dargen.evoplus.features.rune
 
+import net.minecraft.client.sound.Sound
 import net.minecraft.item.Items
+import net.minecraft.sound.SoundCategory
+import net.minecraft.sound.SoundEvents
+import net.minecraft.util.math.BlockPos
 import pro.diamondworld.protocol.packet.ability.AbilityTimers
 import pro.diamondworld.protocol.packet.rune.ActiveRunes
+import ru.dargen.evoplus.EvoPlus
+import ru.dargen.evoplus.Sound.SoundEventsz
 import ru.dargen.evoplus.event.chat.ChatReceiveEvent
 import ru.dargen.evoplus.event.interact.AttackEvent
 import ru.dargen.evoplus.event.on
 import ru.dargen.evoplus.feature.Feature
 import ru.dargen.evoplus.features.misc.notify.NotifyWidget
 import ru.dargen.evoplus.features.rune.widget.AbilityTimerWidget
+import ru.dargen.evoplus.features.stats.combo.ComboWidget
+import ru.dargen.evoplus.protocol.collector.PlayerDataCollector
 import ru.dargen.evoplus.protocol.listen
 import ru.dargen.evoplus.protocol.registry.AbilityType
 import ru.dargen.evoplus.render.Colors
 import ru.dargen.evoplus.render.Relative
 import ru.dargen.evoplus.render.node.box.hbox
-import ru.dargen.evoplus.render.node.item
 import ru.dargen.evoplus.render.node.state.hbar
 import ru.dargen.evoplus.render.node.text
 import ru.dargen.evoplus.scheduler.scheduleEvery
 import ru.dargen.evoplus.util.collection.concurrentHashMapOf
 import ru.dargen.evoplus.util.currentMillis
+import ru.dargen.evoplus.util.format.asShortTextTime
 import ru.dargen.evoplus.util.math.map
 import ru.dargen.evoplus.util.math.v3
-import ru.dargen.evoplus.util.minecraft.customItem
-import ru.dargen.evoplus.util.minecraft.itemStack
-import ru.dargen.evoplus.util.minecraft.printMessage
-import ru.dargen.evoplus.util.minecraft.uncolored
+import ru.dargen.evoplus.util.minecraft.*
 import ru.dargen.evoplus.util.render.alpha
 
 object RuneFeature : Feature("rune", "Руны", customItem(Items.PAPER, 445)) {
@@ -50,6 +55,14 @@ object RuneFeature : Feature("rune", "Руны", customItem(Items.PAPER, 445)) {
 
         +ActiveRunesText
     }
+    val RuneSetCooldownText = text("Кд смены рун: §a✔") {isShadowed = true}
+    var RuneSetCD = -1L
+    val RuneSetCooldownWidget by widgets.widget("Задержка сетов рун", "rune-set-cooldown", enabled = false) {
+        align = v3(0.25)
+        origin = Relative.CenterTop
+
+        +RuneSetCooldownText
+    }
     var ReadyNotify by settings.boolean(
         "Уведомление при окончании задержки способностей",
         true
@@ -72,11 +85,23 @@ object RuneFeature : Feature("rune", "Руны", customItem(Items.PAPER, 445)) {
         true
     )
 
+    val Commentator by settings.boolean(
+            "Профессиональный комментатор",
+            true
+    )
+
+    val RuneCdRegex = "Вы не можете менять сет рун ещё (\\d+) секунд.".toRegex()
+
     init {
         scheduleEvery(period = 2) {
             updateAbilities()
 
             AbilityTimerWidget.update()
+            if(currentMillis < RuneSetCD) {
+                RuneSetCooldownText.text = "Кд смены рун: §c${(RuneSetCD-currentMillis).asShortTextTime}"
+            } else {
+                RuneSetCooldownText.text = "Кд смены рун: §a✔"
+            }
         }
 
         RunesBag
@@ -94,8 +119,32 @@ object RuneFeature : Feature("rune", "Руны", customItem(Items.PAPER, 445)) {
 
         on<ChatReceiveEvent> {
             if(text.uncolored().startsWith("Способность \"Невидимость\" активировалась")) {
+                //World?.playSound(null, Player?.blockPos ?: BlockPos(2, 2, 2), SoundEventsz.ninja1_event, SoundCategory.MASTER, 1000f, 1f)
+
+                //printMessage("${SoundEventsz.NINJA1} | ${Player} | ${SoundEventsz.NINJA1.id}")
                 NinjaStartTime = currentMillis + 7000
                 activeNinja = 1
+                if(Commentator) {
+                    Player?.playSound(SoundEventsz.NINJA1, 100f, 1f)
+                }
+            }
+            if(text.uncolored().startsWith("Способность ")) {
+                RuneSetCD = currentMillis + 10000
+            }
+            if(Commentator) {
+                if (text.uncolored().startsWith("Способность \"Черная дыра\" активировалась")) {
+                    Player?.playSound(SoundEventsz.VOID5, 100f, 1f)
+                }
+                if (text.uncolored().startsWith("Способность \"Рассвет\" активировалась")) {
+                    Player?.playSound(SoundEventsz.FENIX1, 100f, 1f)
+                }
+            }
+
+            RuneCdRegex.find(text.uncolored())?.let {
+                val cd = it.groupValues[1].toLong()
+                if(text.uncolored().startsWith("Вы не можете менять")) {
+                    RuneSetCD = currentMillis + (cd*1000)
+                }
             }
         }
 

@@ -5,8 +5,14 @@ import net.fabricmc.api.ClientModInitializer
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource
 import net.fabricmc.loader.api.FabricLoader
+import net.fabricmc.loader.impl.FabricLoaderImpl.MOD_ID
+import net.minecraft.registry.Registries
+import net.minecraft.registry.Registry
+import net.minecraft.sound.SoundEvent
 import net.minecraft.text.Text
+import net.minecraft.util.Identifier
 import org.slf4j.LoggerFactory
+import ru.dargen.evoplus.Sound.SoundEventsz
 import ru.dargen.evoplus.event.EventBus
 import ru.dargen.evoplus.feature.Features
 import ru.dargen.evoplus.features.command.EvoPlusCommand
@@ -48,11 +54,15 @@ object EvoPlus : ClientModInitializer {
         Features
         EvoPlusService
 
+        SoundEventsz.initialize();
+
 
         ClientCommandRegistrationCallback.EVENT.register { dispatcher: CommandDispatcher<FabricClientCommandSource>, _ ->
             EvoPlusCommand.register(dispatcher)
             ShareCommand.register(dispatcher)
         }
+
+
     }
 
 }

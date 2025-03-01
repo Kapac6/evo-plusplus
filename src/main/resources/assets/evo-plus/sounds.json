@@ -1,0 +1,24 @@
+{
+  "ninja1": {
+    "sounds": [
+      "evo-plus:ninja1"
+    ]
+  },
+  "void5": {
+    "sounds": [
+      "evo-plus:void2",
+      "evo-plus:void3",
+      "evo-plus:void5"
+    ]
+  },
+  "fenix1": {
+    "sounds": [
+      "evo-plus:fenix1"
+    ]
+  },
+  "bossresp": {
+    "sounds": [
+      "evo-plus:bossresp"
+    ]
+  }
+}

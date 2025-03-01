@@ -4,6 +4,7 @@ import net.minecraft.client.gui.screen.ingame.GenericContainerScreen
 import net.minecraft.item.Items
 import pro.diamondworld.protocol.packet.boss.BossTimers
 import pro.diamondworld.protocol.packet.game.GameEvent.EventType.MYTHICAL_EVENT
+import ru.dargen.evoplus.Sound.SoundEventsz
 import ru.dargen.evoplus.event.chat.ChatReceiveEvent
 import ru.dargen.evoplus.event.evo.data.GameEventChangeEvent
 import ru.dargen.evoplus.event.on
@@ -71,7 +72,9 @@ object BossTimerFeature : Feature("boss-timer", "Таймер боссов", ite
 
     val PreSpawnNotify by settings.boolean("Уведомление до спавна", true)
     val SpawnNotify by settings.boolean("Уведомление о спавне", true)
+    val SoundSpawnNotify by settings.boolean("Звуковое уведомление о спавне", true)
     val UpdateNotify by settings.boolean("Уведомление об обновлении времени", true)
+
 
     val AutoReset by settings.boolean("Автоматический сброс таймеров при рестарте", true)
 
@@ -144,6 +147,7 @@ object BossTimerFeature : Feature("boss-timer", "Таймер боссов", ite
                 if (SpawnMessage) message("§aБосс §6$displayName §aвозродился.", type)
                 if (SpawnClanMessage) sendClanMessage("§aБосс $displayName §aвозродился.")
                 if (SpawnNotify) notify(type, "Босс §6$displayName §fвозродился")
+                if (SoundSpawnNotify) Player?.playSound(SoundEventsz.BOSSRESPAWN, 100f, 1f)
             }
         }
     }
